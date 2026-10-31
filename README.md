@@ -16,7 +16,9 @@ sensorless observers (the MRAS from the thesis and a back EMF observer with a
 PLL) and a detector that looks at the mean deceleration over a short window.
 The observers and the detector are also written in C with float32. The C code
 is checked sample by sample against the Python version, built for a Cortex-M4F
-and run on QEMU to count instructions. GitHub Actions runs all of it.
+and run on QEMU to count instructions. GitHub Actions runs all of it. A two
+page summary of the results is in
+[docs/technical_note.pdf](docs/technical_note.pdf).
 
 ![A 3 Nm jam: speed estimates and the windowed deceleration the detector sees](results/figures/jam_example.png)
 
