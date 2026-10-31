@@ -93,25 +93,47 @@ def test_offline_detector_matches_in_loop_detector():
         assert k_off == k_in
 
 
-def _rows(path):
-    return np.array([[float(x) for x in line.split(",")]
-                     for line in path.read_text().splitlines() if not line.startswith("#")])
+def _read_vector(path):
+    hdr, rows = {}, []
+    for line in path.read_text().splitlines():
+        if line.startswith("#"):
+            if "=" in line:
+                k, v = line[2:].split("=", 1)
+                hdr[k] = v
+        else:
+            rows.append([float(x) for x in line.split(",")])
+    return hdr, np.array(rows)
 
 
-def test_c_vectors_are_up_to_date(tmp_path):
-    # Regenerate and compare numerically: libm differences between platforms
-    # can move an ADC sample by one step, so allow about one LSB.
+def test_c_vectors_match_current_python_code():
+    # The C tests compare against the outputs stored in c/vectors. Replay the
+    # stored inputs through the current Python observer and detector to make
+    # sure those outputs still are what the Python code produces. Re-running
+    # the closed loop instead would not be portable: libm differs slightly
+    # between platforms and the difference grows once the jammed rotor stalls.
     import export_vectors
-    export_vectors.main(tmp_path)
     files = sorted((ROOT / "c" / "vectors").glob("*.csv"))
     assert len(files) == 4
+    s = Setup(fs=export_vectors.FS)
+    m = s.motor
     for f in files:
-        new, old = _rows(tmp_path / f.name), _rows(f)
-        assert new.shape == old.shape, f.name
-        assert np.allclose(new[:, :4], old[:, :4], atol=0.05), f.name
-        dth = np.angle(np.exp(1j * (new[:, 4] - old[:, 4])))
-        assert np.abs(dth).max() < 1e-3, f.name
-        assert np.allclose(new[:, 5], old[:, 5], atol=0.5), f.name
-        k_new = np.argmax(new[:, 6]) if new[:, 6].any() else -1
-        k_old = np.argmax(old[:, 6]) if old[:, 6].any() else -1
+        hdr, rows = _read_vector(f)
+        kind = OBS_MRAS if hdr["observer"] == "mras" else OBS_EMF
+        bw = export_vectors.OBS_BW
+        op = (mras_params(s.Ts, m.R, m.L, m.psi, bw) if kind == OBS_MRAS
+              else emf_params(s.Ts, m.R, m.L, m.psi, 4 * bw, bw))
+        stored_op = np.array([float(hdr[f"op{i}"]) for i in range(op.size)])
+        assert np.allclose(op, stored_op, rtol=1e-12), f.name
+        th, w = export_vectors.replay(kind, op, rows[:, :4], float(hdr["th0"]),
+                                      float(hdr["w0"]), float(hdr["iq0"]), m.psi)
+        dth = np.angle(np.exp(1j * (th - rows[:, 4])))
+        assert np.abs(dth).max() < 1e-5, f.name
+        assert np.abs(w - rows[:, 5]).max() < 1e-2, f.name
+        n = int(hdr["det_n"])
+        st = np.zeros(D_NMAX + 3)
+        det_init(st, w[0] / m.p)
+        fired = np.array([det_step(st, x / m.p, n, 1 / (n * s.Ts), float(hdr["det_ath"]),
+                                   float(hdr["det_wen"])) for x in w])
+        k_new = int(np.argmax(fired)) if fired.any() else -1
+        k_old = int(np.argmax(rows[:, 6])) if rows[:, 6].any() else -1
         assert abs(k_new - k_old) <= 1, f.name

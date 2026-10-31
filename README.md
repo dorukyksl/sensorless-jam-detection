@@ -238,8 +238,8 @@ current, every applied voltage and the reference outputs.
 `c/test/test_vectors.c` feeds the same inputs to the C code. The largest angle
 difference is 1.0e-5 rad and the largest speed difference 0.006 rad/s, against
 6231 rad/s electrical, and the detector fires on the same sample in all four
-files. A pytest test regenerates the vectors so they cannot drift away from the
-Python code.
+files. A pytest test replays the stored inputs through the Python code, so the
+stored outputs cannot drift away from it.
 
 ### Cost on a Cortex-M4F
 
