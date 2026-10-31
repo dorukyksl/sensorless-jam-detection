@@ -255,6 +255,9 @@ instructions executed inside the `jd_` functions.
 | `jd_emf_step` | 330 | 486 |
 | `jd_det_step` | 34 | 51 |
 
+These numbers are from arm-none-eabi-gcc 16.2. The GCC 13 that CI installs on
+Ubuntu gives about 3 % fewer instructions (297 and 322 for the two observers).
+
 QEMU is not cycle accurate. For the cycle column I weighted each executed
 instruction with the Cortex-M4 TRM timings (loads and stores 2, VDIV and VSQRT
 14, VMLA and VFMA 3, branches 2, everything else 1), assuming zero wait states
