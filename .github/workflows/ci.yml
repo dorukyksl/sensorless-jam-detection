@@ -1,0 +1,41 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[test]"
+      - name: Unit tests, including C test vectors up to date
+        run: pytest -q
+      - name: Benchmark smoke run
+        run: python scripts/run_benchmark.py --quick
+
+  c-host:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build with warnings as errors
+        run: cmake -S c -B c/build -DCMAKE_BUILD_TYPE=Release && cmake --build c/build -j
+      - name: Golden vector tests against the Python reference
+        run: ctest --test-dir c/build --output-on-failure
+
+  cortex-m4:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install arm-none-eabi-gcc and QEMU
+        run: sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi qemu-system-arm
+      - name: Build for Cortex-M4F and count instructions on QEMU
+        run: python3 scripts/count_instructions.py --budget-instr 600
+      - uses: actions/upload-artifact@v4
+        with:
+          name: m4-cost
+          path: results/m4_cost.json

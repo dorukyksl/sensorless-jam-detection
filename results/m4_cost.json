@@ -1,0 +1,58 @@
+{
+  "target": "Cortex-M4F, arm-none-eabi-gcc -O2, QEMU mps2-an386",
+  "calls_per_benchmark": 200,
+  "library_size_bytes": {
+    "text": 1460,
+    "data": 0,
+    "bss": 0
+  },
+  "function_size_bytes": {
+    "jd_det_init": 26,
+    "jd_det_step": 134,
+    "jd_emf_init": 34,
+    "jd_emf_step": 382,
+    "jd_mras_init": 22,
+    "jd_mras_step": 286,
+    "jd_propagate": 188,
+    "jd_sincos": 296,
+    "jd_wrap": 80
+  },
+  "per_call": {
+    "jd_mras_step": {
+      "instructions_per_call": 305.575,
+      "cycles_estimate_per_call": 428.045,
+      "top_instructions": {
+        "vmul": 14400,
+        "vldr": 11200,
+        "vadd": 6400,
+        "vsub": 4813,
+        "vmov": 3998,
+        "vstr": 3000
+      }
+    },
+    "jd_emf_step": {
+      "instructions_per_call": 329.575,
+      "cycles_estimate_per_call": 486.045,
+      "top_instructions": {
+        "vmul": 15000,
+        "vldr": 12200,
+        "vadd": 6800,
+        "vsub": 5213,
+        "vmov": 3998,
+        "vstr": 3400
+      }
+    },
+    "jd_det_step": {
+      "instructions_per_call": 34.05,
+      "cycles_estimate_per_call": 51.3,
+      "top_instructions": {
+        "vldr": 680,
+        "ldrh": 600,
+        "cmp": 600,
+        "add": 570,
+        "bhi": 400,
+        "uxtb": 370
+      }
+    }
+  }
+}
